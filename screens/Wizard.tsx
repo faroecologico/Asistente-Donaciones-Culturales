@@ -3,12 +3,26 @@ import { useAppStore } from '../store';
 import { AiRequestPayload, AiResponsePayload, AiTask, ProjectType, BeneficiaryType } from '../types';
 import { RETRIBUTION_EVIDENCE_OPTIONS, RETRIBUTION_METRICS_OPTIONS } from '../constants';
 
+import { generateChecklist } from '../lib/documentRules';
+
 export const Wizard: React.FC = () => {
     const { currentProject, updateProject, apiKey, runValidation, validation } = useAppStore();
     const [activeStep, setActiveStep] = useState(0);
     const [loadingAi, setLoadingAi] = useState<AiTask | null>(null);
     const [showAiPanel, setShowAiPanel] = useState(false);
     const [aiSuggestions, setAiSuggestions] = useState<any[]>([]);
+
+    // Auto-generate checklist if empty when entering step 5
+    React.useEffect(() => {
+        if (activeStep === 5 && currentProject && currentProject.documents.length === 0) {
+            const docs = generateChecklist(
+                currentProject.initial.beneficiaryType,
+                currentProject.initial.beneficiaryCategory,
+                currentProject.initial.beneficiaryClass
+            );
+            updateProject({ documents: docs });
+        }
+    }, [activeStep]);
 
     if (!currentProject) return null;
 
