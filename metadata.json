@@ -1,0 +1,5 @@
+{
+  "name": "Asistente Donaciones Culturales",
+  "description": "Prototipo MVP para gestión y formulación de proyectos de Donaciones Culturales con asistencia de IA Gemini.",
+  "requestFramePermissions": []
+}
