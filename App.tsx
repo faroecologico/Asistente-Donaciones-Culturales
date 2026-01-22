@@ -6,6 +6,16 @@ import { Wizard } from './screens/Wizard';
 import { useAppStore } from './store';
 
 function App() {
+  const setUser = useAppStore(state => state.setUser);
+
+  useEffect(() => {
+    const { data: { subscription } } = require('./lib/supabaseClient').supabase.auth.onAuthStateChange((_event: any, session: any) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [setUser]);
+
   return (
     <HashRouter>
       <Layout>

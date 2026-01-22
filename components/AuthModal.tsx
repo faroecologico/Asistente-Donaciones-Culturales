@@ -1,127 +1,85 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { useAppStore } from '../store';
 
-interface AuthModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
-
-export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
-  const [isLogin, setIsLogin] = useState(true);
+export const AuthModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const { setCurrentUser } = useAppStore();
+  const [isSignUp, setIsSignUp] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
-
     try {
-      if (isLogin) {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
+      if (isSignUp) {
+        const { error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
-        if (data.user) {
-             setCurrentUser(data.user as any);
-             onClose();
-        }
+        alert('¡Registro exitoso! Revisa tu email para confirmar.');
       } else {
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-        });
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        if (data.user) {
-             if (!data.session) {
-                 setError("Registro exitoso. Por favor revisa tu correo para confirmar tu cuenta.");
-             } else {
-                 setCurrentUser(data.user as any);
-                 onClose();
-             }
-        }
       }
-    } catch (err: any) {
-      setError(err.message || 'Ocurrió un error');
+      onClose();
+    } catch (error: any) {
+      alert(error.message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-fadeIn">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-slideUp border border-white/20">
-        <div className="p-8">
-          <div className="flex justify-between items-center mb-8">
-            <h2 className="text-2xl font-bold text-slate-800 tracking-tight">
-              {isLogin ? 'Bienvenido' : 'Crear Cuenta'}
-            </h2>
-            <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors p-1 hover:bg-gray-100 rounded-full">
-              <span className="material-icons-outlined">close</span>
-            </button>
+    <div className="fixed inset-0 z-[200] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-6">
+      <div className="bg-white rounded-[2.5rem] w-full max-w-md shadow-2xl overflow-hidden animate-slideUp p-10">
+        <header className="mb-8 text-center">
+          <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-blue-200">
+            <span className="material-icons-outlined text-white text-3xl">lock</span>
           </div>
+          <h2 className="text-2xl font-black text-slate-900">{isSignUp ? 'Crear Cuenta' : 'Iniciar Sesión'}</h2>
+          <p className="text-sm text-slate-400 font-medium mt-2 italic">Accede a tus proyectos en la nube con Supabase</p>
+        </header>
 
-          {error && (
-            <div className={`mb-6 p-3 rounded-lg text-sm flex gap-2 items-start ${error.includes('exitoso') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-              <span className="material-icons-outlined text-sm mt-0.5">info</span>
-              {error}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 ml-1">Email</label>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-white text-slate-900 border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all shadow-sm"
-                placeholder="nombre@ejemplo.com"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 ml-1">Contraseña</label>
-              <input
-                type="password"
-                required
-                minLength={6}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-white text-slate-900 border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all shadow-sm"
-                placeholder="••••••"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-accent text-white font-bold py-3.5 rounded-xl hover:bg-accent-hover transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 disabled:opacity-50 disabled:transform-none mt-2"
-            >
-              {loading ? 'Procesando...' : isLogin ? 'Iniciar Sesión' : 'Registrarse'}
-            </button>
-          </form>
-
-          <div className="mt-8 text-center text-sm text-slate-500">
-            {isLogin ? '¿No tienes cuenta? ' : '¿Ya tienes cuenta? '}
-            <button
-              onClick={() => {
-                  setIsLogin(!isLogin);
-                  setError(null);
-              }}
-              className="text-accent font-bold hover:underline transition-all"
-            >
-              {isLogin ? 'Regístrate aquí' : 'Ingresa aquí'}
-            </button>
+        <form onSubmit={handleAuth} className="space-y-4">
+          <div>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Email</label>
+            <input
+              type="email"
+              className="input-field"
+              placeholder="tu@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
           </div>
-        </div>
+          <div>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Contraseña</label>
+            <input
+              type="password"
+              className="input-field"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="btn-primary w-full py-4 h-auto text-sm shadow-xl shadow-blue-100"
+          >
+            {loading ? 'Procesando...' : isSignUp ? 'Registrarse' : 'Entrar'}
+          </button>
+        </form>
+
+        <footer className="mt-8 pt-8 border-t border-slate-100 text-center">
+          <button
+            onClick={() => setIsSignUp(!isSignUp)}
+            className="text-xs font-black text-slate-400 hover:text-blue-600 transition-colors uppercase tracking-widest"
+          >
+            {isSignUp ? '¿Ya tienes cuenta? Inicia sesión' : '¿No tienes cuenta? Regístrate'}
+          </button>
+        </footer>
       </div>
     </div>
   );

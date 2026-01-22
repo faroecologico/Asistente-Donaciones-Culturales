@@ -10,8 +10,10 @@ interface AppState {
   currentProject: Project | null;
   validation: ValidationResult | null;
   apiKey: string | null;
+  user: any | null;
 
   // Actions
+  setUser: (user: any | null) => void;
   createProject: (base?: Partial<Project>) => void;
   loadProject: (id: string) => void;
   updateProject: (data: Partial<Project>) => void;
@@ -31,6 +33,9 @@ export const useAppStore = create<AppState>()(
       currentProject: null,
       validation: null,
       apiKey: null,
+      user: null,
+
+      setUser: (user) => set({ user }),
 
       createProject: (base) => {
         const newProject = {
