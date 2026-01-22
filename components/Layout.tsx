@@ -1,13 +1,12 @@
-import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { useAppStore } from '../store';
 import { supabase } from '../lib/supabaseClient';
 import { AuthModal } from './AuthModal';
+import { SettingsModal } from './SettingsModal';
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const location = useLocation();
     const { user } = useAppStore();
     const [isAuthOpen, setIsAuthOpen] = useState(false);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [showProfileMenu, setShowProfileMenu] = useState(false);
 
     const handleLogout = async () => {
@@ -56,7 +55,10 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                                         <p className="text-xs font-bold text-slate-900 truncate">{user.email}</p>
                                     </div>
                                     <div className="space-y-1">
-                                        <button className="flex items-center gap-3 w-full p-3 hover:bg-slate-50 rounded-xl text-slate-600 transition-colors text-sm font-bold">
+                                        <button
+                                            onClick={() => { setIsSettingsOpen(true); setShowProfileMenu(false); }}
+                                            className="flex items-center gap-3 w-full p-3 hover:bg-slate-50 rounded-xl text-slate-600 transition-colors text-sm font-bold"
+                                        >
                                             <span className="material-icons-outlined text-lg">settings</span>
                                             Configuración
                                         </button>
@@ -80,6 +82,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             </main>
 
             <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
+            <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
         </div>
     );
 };

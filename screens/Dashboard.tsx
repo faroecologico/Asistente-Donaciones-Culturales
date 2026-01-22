@@ -2,10 +2,12 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store';
 import { ProjectStatus } from '../types';
+import { SettingsModal } from '../components/SettingsModal';
 
 export const Dashboard: React.FC = () => {
     const { projects, deleteProject, loadProject, duplicateProject, createProject, apiKey, setApiKey, loadDemo } = useAppStore();
     const navigate = useNavigate();
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
     const handleCreate = () => {
         createProject();
