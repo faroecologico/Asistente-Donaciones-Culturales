@@ -13,40 +13,43 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     };
 
     return (
-        <div className="min-h-screen flex flex-col font-sans text-slate-900">
-            <header className="bg-slate-900 text-white shadow-md sticky top-0 z-50">
+        <div className="min-h-screen flex flex-col font-sans">
+            <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between h-16 items-center">
-                        <div className="flex items-center gap-4">
-                            <Link to="/" className="text-xl font-bold tracking-tight hover:text-blue-400 transition-colors">
-                                Fondart AI Assist
+
+                        {/* Logo Area */}
+                        <div className="flex items-center gap-8">
+                            <Link to="/" className="flex items-center gap-2 text-blue-700 hover:opacity-80 transition-opacity">
+                                <span className="material-icons-outlined text-3xl">account_balance</span>
+                                <span className="text-xl font-bold tracking-tight text-slate-900">Asistente Donaciones</span>
                             </Link>
-                            <nav className="hidden md:flex gap-4 ml-8">
-                                <Link
-                                    to="/"
-                                    className={`px-3 py-2 rounded-md text-sm font-medium ${location.pathname === '/' ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-700 hover:text-white'}`}
-                                >
-                                    Proyectos
-                                </Link>
-                                <Link
-                                    to="/wizard"
-                                    className={`px-3 py-2 rounded-md text-sm font-medium ${location.pathname.startsWith('/wizard') ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-700 hover:text-white'}`}
-                                >
-                                    Nuevo Proyecto
-                                </Link>
-                            </nav>
                         </div>
 
+                        {/* Right Actions */}
                         <div className="flex items-center gap-4">
+                            {/* Contextual Actions or User Menu */}
+                            <button className="btn-secondary text-xs py-1.5 h-9">
+                                <span className="material-icons-outlined text-sm">settings_suggest</span>
+                                Configurar IA
+                            </button>
+
+                            <div className="h-6 w-px bg-slate-200 mx-2"></div>
+
+                            <Link to="/" className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors">
+                                Mis Proyectos
+                            </Link>
+
                             {currentUser ? (
-                                <div className="flex items-center gap-3">
-                                    <span className="text-sm text-slate-300">{currentUser.email}</span>
-                                    <button onClick={handleLogout} className="text-xs bg-slate-800 hover:bg-slate-700 px-3 py-1 rounded text-red-300 transition-colors">
-                                        Salir
-                                    </button>
-                                </div>
+                                <button onClick={handleLogout} className="btn-secondary text-xs ml-2 h-9">
+                                    <span className="material-icons-outlined text-sm">logout</span>
+                                    Salir
+                                </button>
                             ) : (
-                                <span className="text-xs text-slate-400">Modo Invitado</span>
+                                <button className="btn-secondary text-xs ml-2 h-9 bg-slate-50">
+                                    <span className="material-icons-outlined text-sm">login</span>
+                                    Ingresar
+                                </button>
                             )}
                         </div>
                     </div>
@@ -54,16 +57,9 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             </header>
 
             <main className="flex-1 bg-slate-50 relative">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 h-full">
-                    {children}
-                </div>
+                {children}
             </main>
 
-            <footer className="bg-white border-t border-slate-200 py-6 mt-auto">
-                <div className="max-w-7xl mx-auto px-4 text-center text-slate-500 text-sm">
-                    <p>© {new Date().getFullYear()} Asistente Donaciones Culturales. Versión Beta.</p>
-                </div>
-            </footer>
         </div>
     );
 };
