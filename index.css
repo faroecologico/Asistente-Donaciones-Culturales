@@ -40,7 +40,8 @@ h4,
   }
 
   .card {
-    @apply bg-white rounded-[2rem] border border-slate-100 shadow-[#00000005]_0px_8px_30px;
+    @apply bg-white rounded-[2rem] border border-slate-100;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.02);
   }
 
   .page-container {
