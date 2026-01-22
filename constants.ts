@@ -63,3 +63,10 @@ export const RETRIBUTION_EVIDENCE_OPTIONS = [
   "Aparición en prensa",
   "Certificado de autoridad local"
 ];
+export const RETRIBUTION_METRICS_OPTIONS = [
+  "N° de beneficiarios directos",
+  "N° de actividades realizadas",
+  "N° de ejemplares distribuidos",
+  "Porcentaje de becas otorgadas",
+  "N° de horas de mediación"
+];
