@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store';
 import { ProjectStatus } from '../types';
@@ -101,19 +101,18 @@ export const Dashboard: React.FC = () => {
                 </div>
             )}
 
-            {/* API Key Config (MVP Floating or footer) */}
+            {/* API Key Config (Floating button) */}
             <div className="fixed bottom-8 left-8">
                 <button
-                    onClick={() => {
-                        const key = prompt("Ingrese su Gemini API Key (opcional, por defecto usa la del sistema):", apiKey || "");
-                        if (key !== null) setApiKey(key);
-                    }}
+                    onClick={() => setIsSettingsOpen(true)}
                     className="bg-slate-900 text-white p-4 rounded-2xl shadow-2xl flex items-center gap-3 hover:scale-105 transition-transform"
                 >
                     <span className="material-icons-outlined text-lg">vpn_key</span>
                     <span className="text-xs font-bold uppercase tracking-widest leading-none">Config de IA</span>
                 </button>
             </div>
+
+            <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
         </div>
     );
 };

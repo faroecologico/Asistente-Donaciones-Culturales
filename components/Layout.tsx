@@ -1,3 +1,6 @@
+import React, { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { useAppStore } from '../store';
 import { supabase } from '../lib/supabaseClient';
 import { AuthModal } from './AuthModal';
 import { SettingsModal } from './SettingsModal';
