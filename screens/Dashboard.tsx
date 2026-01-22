@@ -4,7 +4,7 @@ import { useAppStore } from '../store';
 import { ProjectStatus } from '../types';
 
 export const Dashboard: React.FC = () => {
-    const { projects, deleteProject, loadProject, duplicateProject, createProject, apiKey, setApiKey } = useAppStore();
+    const { projects, deleteProject, loadProject, duplicateProject, createProject, apiKey, setApiKey, loadDemo } = useAppStore();
     const navigate = useNavigate();
 
     const handleCreate = () => {

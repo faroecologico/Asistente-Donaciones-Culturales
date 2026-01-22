@@ -20,6 +20,7 @@ interface AppState {
   runValidation: () => void;
   addAiLog: (log: AiLog) => void;
   setApiKey: (key: string | null) => void;
+  loadDemo: () => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -100,7 +101,17 @@ export const useAppStore = create<AppState>()(
         get().updateProject({ aiHistory: newHistory });
       },
 
-      setApiKey: (key) => set({ apiKey: key })
+      setApiKey: (key) => set({ apiKey: key }),
+
+      loadDemo: () => {
+        const { DEMO_PROJECT } = require('./lib/seedData');
+        const demo = { ...DEMO_PROJECT, id: generateId(), createdAt: Date.now(), updatedAt: Date.now() };
+        set(state => ({
+          projects: [demo, ...state.projects],
+          currentProject: demo,
+          validation: validateProject(demo)
+        }));
+      }
     }),
     {
       name: 'asistente-donaciones-storage',
