@@ -1,15 +1,16 @@
 import React, { useEffect } from 'react';
-import { HashRouter, Routes, Route, Link } from 'react-router-dom';
+import { HashRouter, Routes, Route } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { Dashboard } from './screens/Dashboard';
 import { Wizard } from './screens/Wizard';
 import { useAppStore } from './store';
+import { supabase } from './lib/supabaseClient';
 
 function App() {
   const setUser = useAppStore(state => state.setUser);
 
   useEffect(() => {
-    const { data: { subscription } } = require('./lib/supabaseClient').supabase.auth.onAuthStateChange((_event: any, session: any) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
     });
 
