@@ -1,65 +1,42 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useAppStore } from '../store';
-import { supabase } from '../lib/supabaseClient';
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const { currentUser, setCurrentUser } = useAppStore();
     const location = useLocation();
-
-    const handleLogout = async () => {
-        await supabase.auth.signOut();
-        setCurrentUser(null);
-    };
+    const isWizard = location.pathname.startsWith('/wizard');
 
     return (
-        <div className="min-h-screen flex flex-col font-sans">
-            <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between h-16 items-center">
-
-                        {/* Logo Area */}
-                        <div className="flex items-center gap-8">
-                            <Link to="/" className="flex items-center gap-2 text-blue-700 hover:opacity-80 transition-opacity">
-                                <span className="material-icons-outlined text-3xl">account_balance</span>
-                                <span className="text-xl font-bold tracking-tight text-slate-900">Asistente Donaciones</span>
-                            </Link>
+        <div className="min-h-screen flex flex-col">
+            <header className="bg-white/80 backdrop-blur-md border-b border-slate-100 sticky top-0 z-[60] h-16 flex items-center px-10">
+                <div className="flex-1 flex items-center justify-between max-w-7xl mx-auto w-full">
+                    <Link to="/" className="flex items-center gap-2 group transition-opacity hover:opacity-80">
+                        <div className="bg-blue-600 w-8 h-8 rounded-lg flex items-center justify-center transform group-hover:rotate-6 transition-transform">
+                            <span className="material-icons-outlined text-white text-xl">account_balance</span>
                         </div>
+                        <span className="text-sm font-black tracking-[-0.02em] text-slate-900">ASISTENTE DONACIONES</span>
+                    </Link>
 
-                        {/* Right Actions */}
-                        <div className="flex items-center gap-4">
-                            {/* Contextual Actions or User Menu */}
-                            <button className="btn-secondary text-xs py-1.5 h-9">
-                                <span className="material-icons-outlined text-sm">settings_suggest</span>
-                                Configurar IA
-                            </button>
-
-                            <div className="h-6 w-px bg-slate-200 mx-2"></div>
-
-                            <Link to="/" className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors">
-                                Mis Proyectos
-                            </Link>
-
-                            {currentUser ? (
-                                <button onClick={handleLogout} className="btn-secondary text-xs ml-2 h-9">
-                                    <span className="material-icons-outlined text-sm">logout</span>
-                                    Salir
-                                </button>
-                            ) : (
-                                <button className="btn-secondary text-xs ml-2 h-9 bg-slate-50">
-                                    <span className="material-icons-outlined text-sm">login</span>
-                                    Ingresar
-                                </button>
-                            )}
-                        </div>
-                    </div>
+                    <nav className="flex items-center gap-8">
+                        <Link
+                            to="/"
+                            className={`text-[11px] font-black uppercase tracking-widest transition-colors ${location.pathname === '/' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-900'}`}
+                        >
+                            Mis Proyectos
+                        </Link>
+                        <div className="w-px h-4 bg-slate-100"></div>
+                        <button className="flex items-center gap-2 text-slate-900 hover:opacity-70 transition-opacity">
+                            <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200 overflow-hidden">
+                                <span className="material-icons-outlined text-lg">person</span>
+                            </div>
+                            <span className="text-[11px] font-black uppercase tracking-widest">Invitado</span>
+                        </button>
+                    </nav>
                 </div>
             </header>
 
-            <main className="flex-1 bg-slate-50 relative">
+            <main className="flex-1 bg-[#F4F7FA]">
                 {children}
             </main>
-
         </div>
     );
 };

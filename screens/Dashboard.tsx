@@ -4,11 +4,11 @@ import { useAppStore } from '../store';
 import { ProjectStatus } from '../types';
 
 export const Dashboard: React.FC = () => {
-    const { projects, deleteProject, loadProject, duplicateProject, createProject } = useAppStore();
+    const { projects, deleteProject, loadProject, duplicateProject, createProject, apiKey, setApiKey } = useAppStore();
     const navigate = useNavigate();
 
     const handleCreate = () => {
-        createProject(); // Initialize new project
+        createProject();
         navigate('/wizard');
     };
 
@@ -17,113 +17,89 @@ export const Dashboard: React.FC = () => {
         navigate('/wizard');
     };
 
-    const handleDelete = (id: string, e: React.MouseEvent) => {
-        e.stopPropagation();
-        if (window.confirm('¿Seguro que deseas eliminar este proyecto?')) {
-            deleteProject(id);
-        }
-    };
-
     return (
-        <div className="page-container space-y-8">
-
-            {/* Page Header */}
-            <div className="flex justify-between items-end border-b border-slate-200 pb-6">
-                <div>
-                    <h1 className="text-3xl font-bold text-slate-900">Mis Proyectos</h1>
-                    <p className="text-slate-500 text-base mt-2">Gestiona tus postulaciones a la Ley de Donaciones Culturales</p>
+        <div className="page-container py-12">
+            <div className="flex items-end justify-between mb-16 border-b border-slate-200 pb-8">
+                <div className="max-w-xl">
+                    <h1 className="text-4xl font-black text-slate-900 tracking-tight leading-none mb-4">Proyectos</h1>
+                    <p className="text-slate-500 text-lg leading-relaxed">Bienvenido al asistente de formulación. Crea proyectos estructurados para la Ley de Donaciones Culturales.</p>
                 </div>
-                <button
-                    onClick={handleCreate}
-                    className="btn-primary"
-                >
-                    <span className="material-icons-outlined">add</span>
-                    Crear Proyecto
+                <button onClick={handleCreate} className="btn-primary h-14 px-10 rounded-2xl text-base shadow-xl shadow-blue-200">
+                    <span className="material-icons-outlined text-xl">add</span>
+                    Nuevo Proyecto
                 </button>
             </div>
 
             {projects.length === 0 ? (
-                <div className="text-center py-24 bg-white rounded-xl border border-dashed border-slate-300">
-                    <div className="bg-blue-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <span className="material-icons-outlined text-3xl text-blue-600">folder_open</span>
+                <div className="py-32 flex flex-col items-center justify-center bg-white rounded-[2rem] border-2 border-dashed border-slate-200">
+                    <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center mb-8">
+                        <span className="material-icons-outlined text-4xl text-blue-600">rocket_launch</span>
                     </div>
-                    <h3 className="text-lg font-medium text-slate-900">No tienes proyectos aún</h3>
-                    <p className="text-slate-500 mb-6 max-w-sm mx-auto">Comienza creando tu primera postulación con la ayuda de nuestra IA.</p>
-                    <button onClick={handleCreate} className="btn-primary mx-auto">
-                        Comenzar uno nuevo
-                    </button>
+                    <h2 className="text-2xl font-black text-slate-800 mb-2">No hay borradores activos</h2>
+                    <p className="text-slate-400 mb-10 text-center max-w-sm">Los proyectos que inicies aparecerán aquí para ser editados o exportados.</p>
+                    <button onClick={handleCreate} className="btn-secondary px-8">Comenzar ahora mismo</button>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {projects.map(project => (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {projects.map(p => (
                         <div
-                            key={project.id}
-                            onClick={() => handleEdit(project.id)}
-                            className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 hover:shadow-md hover:border-blue-300 transition-all cursor-pointer group flex flex-col h-full"
+                            key={p.id}
+                            onClick={() => handleEdit(p.id)}
+                            className="card p-8 group hover:border-blue-300 hover:shadow-2xl hover:shadow-blue-100 transition-all cursor-pointer relative flex flex-col min-h-[320px] rounded-[2rem]"
                         >
-                            {/* Header Card */}
-                            <div className="flex justify-between items-start mb-4">
-                                <span className={`px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wide ${project.status === ProjectStatus.Ready ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                            <div className="flex justify-between items-start mb-8">
+                                <span className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-full ${p.status === ProjectStatus.Ready ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
                                     }`}>
-                                    {project.status}
+                                    {p.status}
                                 </span>
-                                <span className="text-xs text-slate-400 font-medium">
-                                    {new Date(project.updatedAt).toLocaleDateString()}
-                                </span>
+                                <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">{new Date(p.updatedAt).toLocaleDateString()}</span>
                             </div>
 
-                            {/* Content */}
-                            <h3 className="text-xl font-bold text-slate-800 mb-2 leading-tight group-hover:text-blue-600 transition-colors">
-                                {project.name || "Nuevo Proyecto"}
+                            <h3 className="text-2xl font-black text-slate-900 leading-tight mb-4 group-hover:text-blue-600 transition-colors line-clamp-2">
+                                {p.name || "Sin título"}
                             </h3>
 
-                            <p className="text-sm text-slate-500 mb-6 line-clamp-3 leading-relaxed flex-1">
-                                {project.content.summary || "Sin descripción. Haz clic para editar..."}
+                            <p className="text-sm text-slate-500 leading-relaxed mb-8 flex-1 line-clamp-3">
+                                {p.content.summary || "Proyecto en proceso de formulación. Haz clic para continuar editando detalles."}
                             </p>
 
-                            {/* Tags/Meta */}
-                            <div className="flex flex-wrap gap-2 mb-6">
-                                {project.initial.projectType && (
-                                    <span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded border border-slate-200">
-                                        {project.initial.projectType}
-                                    </span>
-                                )}
-                                {project.initial.beneficiaryType && (
-                                    <span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded border border-slate-200">
-                                        {project.initial.beneficiaryType}
-                                    </span>
-                                )}
-                            </div>
-
-                            {/* Footer Actions */}
-                            <div className="pt-4 border-t border-slate-100 flex justify-between items-center opacity-70 group-hover:opacity-100 transition-opacity">
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            duplicateProject(project.id);
-                                        }}
-                                        title="Duplicar"
-                                        className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-600 transition-colors"
-                                    >
-                                        <span className="material-icons-outlined text-lg">content_copy</span>
-                                    </button>
-                                    <button
-                                        onClick={(e) => handleDelete(project.id, e)}
-                                        title="Eliminar"
-                                        className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-red-600 transition-colors"
-                                    >
-                                        <span className="material-icons-outlined text-lg">delete</span>
-                                    </button>
-                                </div>
-                                <div className="text-sm font-medium text-blue-600 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                                    Editar <span className="material-icons-outlined text-base">arrow_forward</span>
+                            <div className="flex items-center gap-2 pt-6 border-t border-slate-50 mt-auto">
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); duplicateProject(p.id); }}
+                                    className="p-2.5 rounded-xl hover:bg-slate-50 text-slate-400 hover:text-blue-600 transition-colors"
+                                    title="Duplicar"
+                                >
+                                    <span className="material-icons-outlined text-xl">content_copy</span>
+                                </button>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); deleteProject(p.id); }}
+                                    className="p-2.5 rounded-xl hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors"
+                                    title="Eliminar"
+                                >
+                                    <span className="material-icons-outlined text-xl">delete_outline</span>
+                                </button>
+                                <div className="ml-auto flex items-center gap-1 text-xs font-black text-blue-600 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all">
+                                    EDITAR <span className="material-icons-outlined text-base">arrow_forward</span>
                                 </div>
                             </div>
                         </div>
                     ))}
                 </div>
             )}
+
+            {/* API Key Config (MVP Floating or footer) */}
+            <div className="fixed bottom-8 left-8">
+                <button
+                    onClick={() => {
+                        const key = prompt("Ingrese su Gemini API Key (opcional, por defecto usa la del sistema):", apiKey || "");
+                        if (key !== null) setApiKey(key);
+                    }}
+                    className="bg-slate-900 text-white p-4 rounded-2xl shadow-2xl flex items-center gap-3 hover:scale-105 transition-transform"
+                >
+                    <span className="material-icons-outlined text-lg">vpn_key</span>
+                    <span className="text-xs font-bold uppercase tracking-widest leading-none">Config de IA</span>
+                </button>
+            </div>
         </div>
     );
 };

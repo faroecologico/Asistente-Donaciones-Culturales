@@ -1,4 +1,3 @@
-// Enums
 export enum ProjectType {
   Actividades = "Actividades",
   Equipamiento = "Equipamiento",
@@ -19,15 +18,15 @@ export enum ProjectStatus {
   Exported = "Exportado"
 }
 
-// 6.1 Entity Management
 export interface Entity {
   id: string;
   name: string;
   rut: string;
   address: string;
   type: BeneficiaryType;
-  category: string; 
+  category: string;
   classType: string;
+  web?: string;
 }
 
 export interface LegalRep {
@@ -39,7 +38,7 @@ export interface LegalRep {
 export interface TimelineActivity {
   id: string;
   name: string;
-  unit: "dias" | "semanas" | "meses"; // RF-17
+  unit: "dias" | "semanas" | "meses";
   duration: number;
   description: string;
 }
@@ -57,7 +56,9 @@ export interface DocumentItem {
   required: boolean;
   status: "Pendiente" | "Adjunto" | "Validado";
   fileName?: string;
-  maxAgeDate?: string; // RF-26 Control de vigencia
+  fileSize?: number;
+  maxAgeDays?: number;
+  issueDate?: string;
 }
 
 export interface ValidationResult {
@@ -73,19 +74,18 @@ export interface AiLog {
   prompt: string;
   response: string;
   applied: boolean;
+  field?: string;
 }
 
-// RF-16 Structured Retribution
 export interface RetributionDetails {
   what: string;
   who: string;
-  quantity: number; // Cuantas veces / beneficiarios
+  quantity: number;
   location: string;
   when: string;
   accessCondition: "Gratuito" | "Pagado" | "Beneficio";
 }
 
-// Main Project Interface
 export interface Project {
   id: string;
   name: string;
@@ -94,15 +94,15 @@ export interface Project {
   updatedAt: number;
 
   initial: {
-    entityId?: string; // Link to the source entity
+    entityId?: string;
     projectType: ProjectType;
     beneficiaryType: BeneficiaryType;
-    beneficiaryCategory: string; // RF-06
-    beneficiaryClass: string;    // RF-06
+    beneficiaryCategory: string;
+    beneficiaryClass: string;
   };
 
   beneficiary: {
-    entity: Entity; // Snapshot of entity data
+    entity: Entity | null;
     legalRep: LegalRep;
   };
 
@@ -113,19 +113,14 @@ export interface Project {
     objectivesSpecific: string[];
     durationMonths: number;
     startDate: string;
-    
-    // RF-14 & RF-15
     targetAudienceType: string;
     targetAudienceAmount: number;
     targetAudienceComment: string;
-    
     locationRegion: string;
     locationComuna: string;
     locationSpace: string;
-
-    retribution: RetributionDetails; // RF-16
-    
-    hasIntellectualProperty: boolean; // RF-25
+    culturalRetribution: string; // Textual for portal
+    retributionStructured: RetributionDetails;
   };
 
   retributionMeta: {
@@ -141,30 +136,34 @@ export interface Project {
 }
 
 // API Types
-export type AiTask = 
-  | "generate_title" 
-  | "generate_summary" 
-  | "generate_objectives" 
-  | "generate_retribution" 
-  | "generate_timeline" 
-  | "generate_budget_skeleton" 
+export type AiTask =
+  | "generate_title"
+  | "generate_summary"
+  | "generate_objectives"
+  | "generate_retribution"
+  | "generate_timeline"
+  | "generate_budget_skeleton"
   | "rewrite_to_limit";
 
 export interface AiRequestPayload {
   projectId: string;
   task: AiTask;
   field?: string;
-  constraints?: Record<string, any>;
+  constraints?: {
+    maxChars?: number;
+    [key: string]: any;
+  };
   projectContext: Partial<Project>;
   userNotes?: string;
 }
 
 export interface AiResponsePayload {
-  suggestions: string[] | any[];
+  suggestions: any[];
   meta: {
-    tokens?: number;
     model: string;
     timestamp: number;
+    tokens?: number;
+    safety?: any;
   };
   warnings?: string[];
   traceId: string;

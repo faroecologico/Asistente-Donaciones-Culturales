@@ -1,63 +1,38 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
 import { useAppStore } from '../store';
-import { AiRequestPayload, AiResponsePayload, AiTask, ProjectType, BeneficiaryType } from '../types';
+import { AiRequestPayload, AiResponsePayload, AiTask, ProjectType } from '../types';
+import { RETRIBUTION_EVIDENCE_OPTIONS } from '../constants';
 
-// Steps Configuration
-const STEPS = [
-    { id: 'entity_type', label: 'Entidad & Tipo', icon: 'looks_one' },
-    { id: 'beneficiary', label: 'Beneficiario', icon: 'looks_two' },
-    { id: 'project_data', label: 'Datos Proyecto', icon: 'looks_3' },
-    { id: 'retribution', label: 'Retribución', icon: 'looks_4' },
-    { id: 'timeline', label: 'Cronograma', icon: 'looks_5' },
-    { id: 'budget', label: 'Presupuesto', icon: 'looks_6' },
-    { id: 'docs', label: 'Documentos', icon: 'looks_6' }, // Reusing icon for simplicity
-    { id: 'review', label: 'Revisión', icon: 'check_circle' },
-];
-
+// Step components or sub-renders
 export const Wizard: React.FC = () => {
     const { currentProject, updateProject, apiKey, runValidation, validation } = useAppStore();
-    const navigate = useNavigate();
-    const [loadingAi, setLoadingAi] = useState<string | null>(null);
-    const [activeStepIndex, setActiveStepIndex] = useState(0);
-
-    useEffect(() => {
-        if (!currentProject) {
-            navigate('/');
-        }
-    }, [currentProject, navigate]);
+    const [activeStep, setActiveStep] = useState(0);
+    const [loadingAi, setLoadingAi] = useState<AiTask | null>(null);
+    const [showAiPanel, setShowAiPanel] = useState(false);
 
     if (!currentProject) return null;
 
-    const activeStep = STEPS[activeStepIndex];
+    const steps = [
+        "Datos Iniciales",
+        "Beneficiario",
+        "Datos del Proyecto",
+        "Cronograma",
+        "Presupuesto",
+        "Documentos",
+        "Revisión y Export"
+    ];
 
-    const handleNext = () => {
-        if (activeStepIndex < STEPS.length - 1) {
-            setActiveStepIndex(prev => prev + 1);
-            runValidation();
-        }
-    };
-
-    const handleBack = () => {
-        if (activeStepIndex > 0) {
-            setActiveStepIndex(prev => prev - 1);
-        }
-    };
-
-    // --- AI Handler ---
-    const runAiTask = async (task: AiTask, field?: string) => {
-        if (!currentProject) return;
+    const runAi = async (task: AiTask, field?: string, userNotes?: string) => {
         setLoadingAi(task);
-
-        const payload: AiRequestPayload = {
-            projectId: currentProject.id,
-            task: task,
-            field: field,
-            projectContext: currentProject,
-            userNotes: "Focus on Chilean culture laws."
-        };
-
         try {
+            const payload: AiRequestPayload = {
+                projectId: currentProject.id,
+                task,
+                field,
+                projectContext: currentProject,
+                userNotes
+            };
+
             const res = await fetch('/api/ai/generate', {
                 method: 'POST',
                 headers: {
@@ -67,303 +42,257 @@ export const Wizard: React.FC = () => {
                 body: JSON.stringify(payload)
             });
 
-            if (!res.ok) throw new Error('AI Request failed');
-
             const data: AiResponsePayload = await res.json();
-            const suggestions = data.suggestions;
-
-            if (suggestions && suggestions.length > 0) {
-                if (task === 'generate_title') {
-                    updateProject({
-                        content: { ...currentProject.content, title: suggestions[0] },
-                        name: suggestions[0]
-                    });
-                } else if (task === 'generate_summary') {
-                    updateProject({
-                        content: { ...currentProject.content, summary: suggestions[0] }
-                    });
-                }
-            }
-        } catch (err) {
-            console.error(err);
-            alert("Error generating content. Please check API Key.");
+            return data;
+        } catch (e) {
+            console.error(e);
+            return null;
         } finally {
             setLoadingAi(null);
         }
     };
 
-    // --- RENDER CONTENT BY STEP ---
-    const renderStepContent = () => {
-        switch (activeStep.id) {
-            case 'entity_type':
-                return (
-                    <div className="space-y-6 animate-fadeIn">
-                        <div className="border border-blue-100 bg-blue-50 p-6 rounded-xl">
-                            <h3 className="text-lg font-semibold text-blue-900 mb-4 flex items-center gap-2">
-                                <span className="material-icons-outlined">domain</span>
-                                1. Selección de Entidad Beneficiaria
-                            </h3>
-                            <select
-                                className="input-field bg-white"
-                                value={currentProject.initial.entityId || ''}
-                                onChange={(e) => updateProject({ initial: { ...currentProject.initial, entityId: e.target.value } })}
+    const renderStep = () => {
+        switch (activeStep) {
+            case 0: return (
+                <div className="space-y-6">
+                    <div className="card p-6">
+                        <h3 className="text-lg font-bold mb-4">Clasificación de Proyecto</h3>
+                        <div className="grid grid-cols-1 gap-4">
+                            <div>
+                                <label className="label">Tipo de Proyecto (RF-05)</label>
+                                <select
+                                    className="input-field"
+                                    value={currentProject.initial.projectType}
+                                    onChange={e => updateProject({ initial: { ...currentProject.initial, projectType: e.target.value as ProjectType } })}
+                                >
+                                    {Object.values(ProjectType).map(t => <option key={t} value={t}>{t}</option>)}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+            case 2: return (
+                <div className="space-y-6">
+                    <div className="card p-6 relative">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-bold text-slate-900 leading-tight">Datos Narrativos</h3>
+                            <button
+                                onClick={() => setShowAiPanel(true)}
+                                className="text-xs text-blue-600 font-bold flex items-center gap-1 bg-blue-50 px-3 py-1.5 rounded-full hover:bg-blue-100 transition-colors"
+                                title="Abrir Asistente IA"
                             >
-                                <option value="">-- Seleccionar Entidad Existente --</option>
-                                {/* MOCK ENTITIES from Store would go here if available */}
-                            </select>
-
-                            <button className="w-full mt-4 py-3 border-2 border-dashed border-blue-300 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors flex items-center justify-center gap-2 font-medium">
-                                <span className="material-icons-outlined">add_circle_outline</span>
-                                Crear Nueva Entidad
+                                <span className="material-icons-outlined text-sm">auto_awesome</span>
+                                ASISTENTE IA
                             </button>
                         </div>
 
-                        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
+                        <div className="space-y-4">
                             <div>
-                                <label className="block text-sm font-semibold text-slate-700 mb-2">Nombre del Proyecto (Interno)</label>
+                                <div className="flex justify-between items-center mb-1">
+                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Título del Proyecto</label>
+                                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${currentProject.content.title.length > 150 ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600'}`}>
+                                        {currentProject.content.title.length}/150
+                                    </span>
+                                </div>
                                 <input
                                     type="text"
-                                    className="input-field"
-                                    value={currentProject.name}
-                                    onChange={(e) => updateProject({ name: e.target.value })}
-                                    placeholder="Ej: Festival de Teatro 2026"
+                                    className="input-field text-lg font-semibold"
+                                    value={currentProject.content.title}
+                                    onChange={e => updateProject({ content: { ...currentProject.content, title: e.target.value }, name: e.target.value })}
+                                    placeholder="Ej: Festival de Teatro Comunitario 2024"
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-sm font-semibold text-slate-700 mb-2">Tipo de Proyecto (RF-05)</label>
-                                <select
-                                    className="input-field"
-                                    value={currentProject.initial.projectType}
-                                    onChange={(e) => updateProject({ initial: { ...currentProject.initial, projectType: e.target.value as ProjectType } })}
-                                >
-                                    {Object.values(ProjectType).map(t => <option key={t} value={t}>{t}</option>)}
-                                </select>
-                                <p className="text-xs text-slate-500 mt-2 flex items-center gap-1">
-                                    <span className="material-icons-outlined text-sm">info</span>
-                                    Seleccione solo un tipo. Si su proyecto es mixto, deberá separarlo.
-                                </p>
+                                <div className="flex justify-between items-center mb-1">
+                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Resumen Ejecutivo</label>
+                                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${currentProject.content.summary.length > 400 ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600'}`}>
+                                        {currentProject.content.summary.length}/400
+                                    </span>
+                                </div>
+                                <textarea
+                                    rows={5}
+                                    className="input-field leading-relaxed"
+                                    value={currentProject.content.summary}
+                                    onChange={e => updateProject({ content: { ...currentProject.content, summary: e.target.value } })}
+                                    placeholder="Describe el impacto y actividades principales..."
+                                />
                             </div>
                         </div>
                     </div>
-                );
+                </div>
+            );
+            case 6: return (
+                <div className="space-y-6">
+                    <div className="card p-8">
+                        <h3 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                            <span className="material-icons-outlined text-green-600">fact_check</span>
+                            Revisión y Exportación
+                        </h3>
 
-            case 'beneficiary':
-                return (
-                    <div className="space-y-6 animate-fadeIn">
-                        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                            <h3 className="text-lg font-bold text-slate-800 mb-6">Datos de la Entidad</h3>
-                            <div className="grid grid-cols-2 gap-6 p-4 bg-slate-50 rounded-lg border border-slate-100">
-                                <div>
-                                    <label className="text-xs font-bold text-slate-400 uppercase">Nombre</label>
-                                    <p className="text-slate-900 font-medium">{currentProject.beneficiary.entity?.name || '---'}</p>
-                                </div>
-                                <div>
-                                    <label className="text-xs font-bold text-slate-400 uppercase">RUT</label>
-                                    <p className="text-slate-900 font-medium">{currentProject.beneficiary.entity?.rut || '---'}</p>
-                                </div>
-                                <div className="col-span-2">
-                                    <label className="text-xs font-bold text-slate-400 uppercase">Clasificación</label>
-                                    <div className="flex items-center gap-2 mt-1">
-                                        <span className="text-slate-900 font-medium">Jurídica</span>
-                                        {/* Mock tags */}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                            <h3 className="text-lg font-bold text-slate-800 mb-6">Representante Legal</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                             <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 mb-2">Nombre Completo</label>
-                                    <input type="text" className="input-field" />
-                                </div>
+                                <h4 className="font-bold text-slate-700 border-b pb-2">Pre-flight Check</h4>
+                                {steps.slice(0, 6).map((step, i) => {
+                                    const hasError = validation?.errors[step.toLowerCase().replace(/ /g, '_')]; // simplified
+                                    return (
+                                        <div key={i} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                                            <span className="text-sm font-medium">{step}</span>
+                                            <span className={`material-icons-outlined ${hasError ? 'text-red-500' : 'text-green-500'}`}>
+                                                {hasError ? 'error_outline' : 'check_circle'}
+                                            </span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            <div className="space-y-4">
+                                <h4 className="font-bold text-slate-700 border-b pb-2">Acciones Finales</h4>
+                                <button className="btn-primary w-full py-3 h-auto">
+                                    <span className="material-icons-outlined">download</span>
+                                    Generar Paquete de Postulación
+                                </button>
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-semibold text-slate-700 mb-2">RUT</label>
-                                        <input type="text" className="input-field" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-semibold text-slate-700 mb-2">Email</label>
-                                        <input type="email" className="input-field" />
-                                    </div>
+                                    <button className="btn-secondary py-3 text-sm h-auto">Copiar Textos</button>
+                                    <button className="btn-secondary py-3 text-sm h-auto">Checklist Docs</button>
                                 </div>
                             </div>
                         </div>
                     </div>
-                );
-
-            case 'project_data':
-                return (
-                    <div className="space-y-6 animate-fadeIn">
-                        {/* Title Section */}
-                        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                            <div className="flex justify-between items-center mb-2">
-                                <label className="block text-sm font-semibold text-slate-700">Título del Proyecto</label>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-xs text-slate-400">{currentProject.content.title.length}/150</span>
-                                    <button
-                                        onClick={() => runAiTask('generate_title')}
-                                        disabled={loadingAi === 'generate_title'}
-                                        className="text-xs text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
-                                    >
-                                        <span className="material-icons-outlined text-sm">auto_awesome</span>
-                                        Generar con IA
-                                    </button>
-                                </div>
-                            </div>
-                            <input
-                                type="text"
-                                className="input-field"
-                                value={currentProject.content.title}
-                                onChange={(e) => updateProject({ content: { ...currentProject.content, title: e.target.value } })}
-                                placeholder="Un título descriptivo y claro..."
-                            />
-                        </div>
-
-                        {/* Location */}
-                        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                            <div className="flex items-center gap-2 mb-4 text-slate-800 font-bold">
-                                <span className="material-icons-outlined text-slate-400">place</span>
-                                Ubicación
-                            </div>
-                            <div className="grid grid-cols-3 gap-4">
-                                <div>
-                                    <label className="block text-xs font-semibold text-slate-500 mb-1">Región</label>
-                                    <input type="text" className="input-field" placeholder="Ej: Maule" />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-semibold text-slate-500 mb-1">Comuna</label>
-                                    <input type="text" className="input-field" placeholder="Ej: Talca" />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-semibold text-slate-500 mb-1">Espacio/Lugar</label>
-                                    <input type="text" className="input-field" placeholder="Ej: Teatro Regional" />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Summary */}
-                        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                            <div className="flex justify-between items-center mb-2">
-                                <label className="block text-sm font-semibold text-slate-700">Resumen Ejecutivo</label>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-xs text-slate-400">{currentProject.content.summary.length}/400</span>
-                                    <button
-                                        onClick={() => runAiTask('generate_summary')}
-                                        disabled={loadingAi === 'generate_summary'}
-                                        className="text-xs text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
-                                    >
-                                        <span className="material-icons-outlined text-sm">auto_awesome</span>
-                                        Generar con IA
-                                    </button>
-                                </div>
-                            </div>
-                            <textarea
-                                rows={6}
-                                className="input-field resize-none"
-                                value={currentProject.content.summary}
-                                onChange={(e) => updateProject({ content: { ...currentProject.content, summary: e.target.value } })}
-                                placeholder="Describe brevemente de qué trata el proyecto..."
-                            />
-                        </div>
-                    </div>
-                );
-
-            default:
-                return (
-                    <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-                        <span className="material-icons-outlined text-6xl mb-4">construction</span>
-                        <h3 className="text-lg font-medium text-slate-600">En Construcción</h3>
-                        <p>Esta sección ({activeStep.label}) estará disponible pronto.</p>
-                    </div>
-                );
+                </div>
+            );
+            default: return <div className="text-center py-20 text-slate-400 italic">Paso en construcción...</div>;
         }
     };
 
     return (
-        <div className="flex flex-col md:flex-row min-h-[calc(100vh-80px)] bg-slate-50">
-            {/* LEFT SIDEBAR - STEPPER */}
-            <aside className="w-full md:w-64 flex-shrink-0 bg-white border-r border-slate-200 hidden md:block">
-                <div className="p-6">
-                    <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Nuevo Proyecto</h2>
-                    <div className="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs inline-block mb-6 font-medium">
-                        {currentProject.status.toUpperCase()}
+        <div className="flex flex-col md:flex-row min-h-[calc(100vh-64px)] bg-slate-50 relative overflow-hidden">
+            {/* Sidebar Stepper */}
+            <aside className="w-full md:w-80 bg-white border-r border-slate-200 p-8 hidden md:block overflow-y-auto">
+                <div className="mb-10">
+                    <h2 className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] mb-4">Guía de Formulación</h2>
+                    <div className="bg-slate-100 h-1 rounded-full w-full relative">
+                        <div
+                            className="absolute left-0 top-0 h-full bg-blue-600 rounded-full transition-all duration-500"
+                            style={{ width: `${((activeStep + 1) / steps.length) * 100}%` }}
+                        ></div>
                     </div>
-
-                    <nav className="space-y-1">
-                        {STEPS.map((step, idx) => {
-                            const isActive = idx === activeStepIndex;
-                            const isCompleted = idx < activeStepIndex;
-
-                            return (
-                                <button
-                                    key={step.id}
-                                    onClick={() => setActiveStepIndex(idx)}
-                                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all ${isActive
-                                            ? 'bg-blue-50 text-blue-700 shadow-sm'
-                                            : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-                                        }`}
-                                >
-                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs border ${isActive
-                                            ? 'bg-blue-600 text-white border-blue-600'
-                                            : isCompleted
-                                                ? 'bg-green-100 text-green-700 border-green-200'
-                                                : 'bg-white text-slate-400 border-slate-200'
-                                        }`}>
-                                        {isCompleted ? <span className="material-icons-outlined text-sm">check</span> : (idx + 1)}
-                                    </div>
-                                    <span>{step.label}</span>
-                                </button>
-                            );
-                        })}
-                    </nav>
                 </div>
+
+                <nav className="space-y-3">
+                    {steps.map((step, idx) => (
+                        <button
+                            key={idx}
+                            onClick={() => setActiveStep(idx)}
+                            className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-left transition-all group ${activeStep === idx
+                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-100 translate-x-1'
+                                    : idx < activeStep
+                                        ? 'text-slate-900 border border-slate-100 hover:border-blue-200 hover:bg-white'
+                                        : 'text-slate-400 grayscale hover:grayscale-0 pointer-events-none'
+                                }`}
+                        >
+                            <div className={`w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-bold border transition-colors ${activeStep === idx ? 'bg-blue-500 border-blue-400' : 'bg-slate-50 border-slate-200 text-slate-400'
+                                }`}>
+                                {idx + 1}
+                            </div>
+                            <span className="text-sm font-bold flex-1">{step}</span>
+                            {idx < activeStep && <span className="material-icons-outlined text-green-500 text-sm">check_circle</span>}
+                        </button>
+                    ))}
+                </nav>
             </aside>
 
-            {/* MAIN CONTENT AREA */}
-            <main className="flex-1 flex flex-col">
-                {/* Mobile Stepper Header (visible only on small screens) */}
-                <div className="md:hidden bg-white p-4 border-b border-slate-200 flex items-center justify-between sticky top-0 z-10">
-                    <span className="text-sm font-bold text-slate-700">{activeStep.label}</span>
-                    <span className="text-xs text-slate-400">Paso {activeStepIndex + 1} / {STEPS.length}</span>
-                </div>
-
-                {/* Header Action Bar */}
-                <div className="bg-white border-b border-slate-200 px-8 py-4 flex justify-between items-center sticky top-0 z-20 shadow-sm">
-                    <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-blue-600"></span>
-                        <h2 className="text-lg font-bold text-slate-800">{activeStep.label}</h2>
+            {/* Main Content Area */}
+            <main className="flex-1 flex flex-col min-w-0">
+                <header className="bg-white border-b border-slate-200 px-8 py-4 flex justify-between items-center sticky top-0 z-10">
+                    <div className="min-w-0 flex-1 mr-4">
+                        <div className="flex items-center gap-2 mb-1">
+                            <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 text-[9px] font-black rounded tracking-widest uppercase">Paso {activeStep + 1}</span>
+                            <h2 className="text-xs font-bold text-slate-400 truncate">{currentProject.name || "Nuevo Proyecto"}</h2>
+                        </div>
+                        <h1 className="text-xl font-black text-slate-900 truncate tracking-tight">{steps[activeStep]}</h1>
                     </div>
-                    <div className="flex gap-3">
-                        <button className="btn-ghost text-sm">
-                            <span className="material-icons-outlined text-lg">save</span>
-                            Guardar Avance
+
+                    <div className="flex gap-3 shrink-0">
+                        <button
+                            onClick={() => setActiveStep(prev => Math.max(0, prev - 1))}
+                            disabled={activeStep === 0}
+                            className="btn-secondary px-5 h-10 text-sm"
+                        >
+                            Anterior
                         </button>
                         <button
-                            onClick={handleBack}
-                            disabled={activeStepIndex === 0}
-                            className="btn-secondary"
+                            onClick={() => setActiveStep(prev => Math.min(steps.length - 1, prev + 1))}
+                            className="btn-primary px-8 h-10 text-sm"
                         >
-                            Atrás
-                        </button>
-                        <button
-                            onClick={handleNext}
-                            className="btn-primary"
-                        >
-                            {activeStepIndex === STEPS.length - 1 ? 'Finalizar' : 'Siguiente'}
+                            {activeStep === steps.length - 1 ? 'Finalizar' : 'Siguiente'}
                         </button>
                     </div>
-                </div>
+                </header>
 
-                {/* Form Content */}
                 <div className="flex-1 p-8 overflow-y-auto">
-                    <div className="max-w-3xl mx-auto">
+                    <div className="max-w-4xl mx-auto pb-20">
                         {renderStepContent()}
                     </div>
                 </div>
             </main>
+
+            {/* AI Assistant Modal/Panel */}
+            {showAiPanel && (
+                <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden animate-slideUp">
+                        <header className="bg-blue-600 py-6 px-10 text-white flex justify-between items-center">
+                            <div className="flex items-center gap-3">
+                                <span className="material-icons-outlined text-3xl">auto_awesome</span>
+                                <div>
+                                    <h2 className="text-lg font-black tracking-tight leading-none">Asistente Gemini</h2>
+                                    <p className="text-[10px] text-blue-100 font-bold opacity-80 uppercase tracking-widest mt-1">Sugerencia Inteligente</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setShowAiPanel(false)} className="bg-white/10 hover:bg-white/20 p-2 rounded-full transition-colors">
+                                <span className="material-icons-outlined text-xl">close</span>
+                            </button>
+                        </header>
+
+                        <div className="p-10 space-y-8">
+                            <div className="bg-blue-50/50 p-6 rounded-2xl border border-blue-100">
+                                <p className="text-sm text-slate-700 leading-relaxed italic">"Hola. Puedo ayudarte a redactar el **{steps[activeStep]}** de tu proyecto basándome en la Ley 18.985. ¿Tienes alguna instrucción adicional?"</p>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Contexto Extra (Opcional)</label>
+                                <textarea
+                                    placeholder="Ej: Incluye lenguaje formal, enfócate en el impacto social..."
+                                    className="input-field min-h-[120px] bg-slate-50 border-slate-100"
+                                />
+                            </div>
+
+                            <div className="flex gap-4 pt-4 border-t border-slate-100">
+                                <button className="btn-secondary flex-1 py-4 text-sm font-bold" onClick={() => setShowAiPanel(false)}>Cancelar</button>
+                                <button
+                                    className="btn-primary flex-1 py-4 text-sm font-bold shadow-xl shadow-blue-200"
+                                    onClick={async () => {
+                                        const res = await runAi(activeStep === 2 ? 'generate_summary' : 'generate_title');
+                                        if (res) {
+                                            alert("IA generó sugerencia: " + res.suggestions[0]);
+                                            setShowAiPanel(false);
+                                        }
+                                    }}
+                                >
+                                    {loadingAi ? 'PROCESANDO...' : 'GENERAR PROPUESTA'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
+
+    // Helper inside to keep it simple for now
+    function renderStepContent() {
+        return renderStep();
+    }
 };
