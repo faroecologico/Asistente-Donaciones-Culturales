@@ -246,6 +246,7 @@ export const Wizard: React.FC = () => {
     const handleRunAi = async () => {
         if (!aiTask) return;
         setAiLoading(true);
+        setAiResult(null); // Clear previous result
         try {
             const res = await fetch('/api/ai/generate', {
                 method: 'POST',
@@ -258,11 +259,20 @@ export const Wizard: React.FC = () => {
                     userNotes: aiNotes
                 })
             });
+
+            if (!res.ok) throw new Error(res.statusText);
+
             const data: AiResponsePayload = await res.json();
-            setAiResult(data);
+
+            if (data && Array.isArray(data.suggestions)) {
+                setAiResult(data);
+            } else {
+                console.error("Invalid AI response:", data);
+                alert("La IA no devolvió un formato válido. Intente nuevamente.");
+            }
         } catch (err) {
             console.error(err);
-            alert("Error al conectar con la IA");
+            alert("Error al conectar con la IA. Verifique su API Key.");
         } finally {
             setAiLoading(false);
         }
@@ -401,18 +411,25 @@ export const Wizard: React.FC = () => {
                                     </>
                                 ) : (
                                     <div className="space-y-4">
+                                    <div className="space-y-4">
                                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Propuesta Generada</label>
-                                        {aiResult.suggestions.map((s: any, idx: number) => (
+                                        {aiResult?.suggestions && Array.isArray(aiResult.suggestions) ? (
+                                            aiResult.suggestions.map((s: any, idx: number) => (
                                             <div key={idx} className="p-4 border border-blue-100 rounded-xl bg-blue-50/50 hover:bg-blue-50 transition-colors group">
                                                 <p className="text-sm text-slate-800 whitespace-pre-wrap">{typeof s === 'string' ? s : JSON.stringify(s)}</p>
-                                                <button
+                                                <button 
                                                     onClick={() => handleApplyAi(typeof s === 'string' ? s : JSON.stringify(s))}
                                                     className="mt-3 w-full btn-primary h-8 text-xs md:opacity-0 group-hover:opacity-100 transition-opacity"
                                                 >
                                                     USAR ESTA VERSIÓN
                                                 </button>
                                             </div>
-                                        ))}
+                                        ))
+                                        ) : (
+                                            <div className="text-red-500 text-sm p-4 bg-red-50 rounded-lg">
+                                                No se pudieron generar sugerencias.
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -436,9 +453,9 @@ export const Wizard: React.FC = () => {
                                 )}
                             </div>
                         </div>
-                    </div>
+                        </div>
                 )}
-            </main>
+                    </main>
         </div>
     );
 };
