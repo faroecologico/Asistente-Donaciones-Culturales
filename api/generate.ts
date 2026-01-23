@@ -29,10 +29,21 @@ const buildUserPrompt = (payload: AiRequestPayload): string => {
     // 4.2 Prompt de inicio (USER)
     if (task === 'generate_initial_draft') {
         return `
-    Genera un borrador completo del proyecto basado en esta idea:
+    Genera un borrador completo del proyecto Cultural basado en esta idea:
     Idea del proyecto: "${userNotes}"
     
-    Devuelve un JSON con la estructura completa del schema Project (clasificacion, pasos 1-5).
+    INSTRUCCIONES:
+    1. Clasifica el proyecto en 'clasificacion'.
+    2. Completa 'paso1_beneficiario', 'paso2_datos_proyecto', 'paso3_cronograma' y 'paso4_presupuesto'.
+    3. Usa estrictamente las claves:
+       - "clasificacion": { "tipo_proyecto": "...", "tipo_beneficiario": "..." }
+       - "paso1_beneficiario": { "entidad": {...}, "representante_legal": {...} }
+       - "paso2_datos_proyecto": { "titulo": {"texto": "..."}, "resumen": {"texto": "..."}, "objetivos": {...}, "retribucion_cultural": {...} }
+       - "paso3_cronograma": { "actividades": [...] }
+       - "paso4_presupuesto": { "items": [...] }
+       - "paso5_documentos": { "propiedad_intelectual": { "declara_uso": false } }
+    
+    Devuelve estrictamente un JSON con esta estructura.
     `;
     }
 
