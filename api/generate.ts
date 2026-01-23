@@ -118,13 +118,34 @@ export default async function handler(req: Request) {
 
         const prompt = buildUserPrompt(payload);
         const result = await model.generateContent(prompt);
-        const text = result.response.text();
-        const data = JSON.parse(text);
+        let text = result.response.text();
+
+        // Sanitize: Remove markdown code blocks if present
+        text = text.replace(/```json\s*/g, "").replace(/```\s*/g, ""); // Basic strip
+
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            console.error("JSON Parse Error:", text);
+            // Fallback: try to find first { and last }
+            const start = text.indexOf('{');
+            const end = text.lastIndexOf('}');
+            if (start !== -1 && end !== -1) {
+                try {
+                    data = JSON.parse(text.substring(start, end + 1));
+                } catch (e2) {
+                    throw new Error("Failed to parse AI response as JSON");
+                }
+            } else {
+                throw new Error("Invalid JSON format from AI");
+            }
+        }
 
         return new Response(JSON.stringify({
             ...data,
             meta: { model: 'gemini-1.5-flash', timestamp: Date.now() },
-            suggestions: data.suggestions || [JSON.stringify(data)], // Normalize if full object returned
+            suggestions: data.suggestions || [JSON.stringify(data)],
         }), { status: 200, headers: { 'Content-Type': 'application/json' } });
 
     } catch (err: any) {
