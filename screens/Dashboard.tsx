@@ -198,14 +198,48 @@ export const Dashboard: React.FC = () => {
             {/* API Key Config */}
             <div className="fixed bottom-8 left-8 z-40">
                 <button
-                    onClick={() => {
+                    onClick={async () => {
                         const key = prompt("Ingrese su Gemini API Key:", apiKey || "");
-                        if (key !== null) setApiKey(key);
+                        if (key && key !== apiKey) {
+                            // Validate
+                            const btn = document.getElementById('apikey-btn');
+                            if (btn) btn.innerText = "VALIDANDO...";
+
+                            try {
+                                const res = await fetch('/api/ai/generate', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json', 'x-gemini-api-key': key },
+                                    body: JSON.stringify({
+                                        projectId: 'test',
+                                        task: 'validate_key',
+                                        projectContext: {}
+                                    })
+                                });
+
+                                if (res.ok) {
+                                    const data = await res.json();
+                                    if (data.suggestions && data.suggestions[0] === "OK") {
+                                        setApiKey(key);
+                                        alert("API Key Validada y Guardada exitosamente.");
+                                    } else {
+                                        throw new Error("Respuesta inesperada");
+                                    }
+                                } else {
+                                    throw new Error("API Key inválida");
+                                }
+                            } catch (e) {
+                                console.error(e);
+                                alert("Error: La API Key no es válida o no tiene permisos.");
+                            } finally {
+                                if (btn) btn.innerHTML = '<span class="material-icons-outlined text-slate-400">vpn_key</span><span class="text-xs font-bold uppercase tracking-widest leading-none">API Key</span>';
+                            }
+                        }
                     }}
+                    id="apikey-btn"
                     className="bg-white text-slate-900 border border-slate-200 p-3 rounded-xl shadow-lg flex items-center gap-3 hover:scale-105 transition-transform"
                 >
                     <span className="material-icons-outlined text-slate-400">vpn_key</span>
-                    <span className="text-xs font-bold uppercase tracking-widest leading-none">API Key</span>
+                    <span className="text-xs font-bold uppercase tracking-widest leading-none">API Key {apiKey ? '(OK)' : ''}</span>
                 </button>
             </div>
         </div>

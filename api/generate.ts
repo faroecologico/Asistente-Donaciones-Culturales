@@ -78,6 +78,14 @@ const buildUserPrompt = (payload: AiRequestPayload): string => {
     `;
     }
 
+    // 4.5 Validar API Key
+    if (task === 'validate_key') {
+        return `
+        Esto es una prueba de conexión. Responde estrictamente:
+        { "suggestions": ["OK"] }
+        `;
+    }
+
     // Fallback for smaller tasks if needed (Legacy)
     return `
   Task: ${task}.
