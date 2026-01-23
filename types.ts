@@ -5,6 +5,12 @@ export interface ProjectMeta {
   updatedAt: number;
 }
 
+export enum ProjectStatus {
+  Draft = 'Borrador',
+  Review = 'En Revisión',
+  Approved = 'Aprobado'
+}
+
 export interface Clasificacion {
   tipo_proyecto: string; // "Actividades" | "Equipamiento" | ...
   tipo_beneficiario: string; // "Jurídica" | "Natural" | "Estatal"
