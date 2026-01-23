@@ -1,8 +1,8 @@
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI } from '@google/generative-ai';
 import { AiRequestPayload } from '../types';
 
 export const config = {
-    runtime: 'edge',
+    runtime: 'nodejs',
 };
 
 // 4.1 Prompt maestro (SYSTEM)
