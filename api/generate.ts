@@ -2,80 +2,78 @@ import { GoogleGenAI } from '@google/genai';
 import { AiRequestPayload } from '../types';
 
 export const config = {
-    runtime: 'edge', // Use Edge runtime for better performance on Vercel
+    runtime: 'edge',
 };
 
+// 4.1 Prompt maestro (SYSTEM)
 const SYSTEM_PROMPT = `
-Act as an expert consultant for the Chilean "Ley de Donaciones Culturales" (Law 18.985).
-Your goal is to assist in formulating high-quality cultural projects.
-RULES:
-1. OUTPUT JSON ONLY. No markdown, no preambles.
-2. Language: Formal Chilean Spanish.
-3. Be specific and realistic. Do not invent financial figures unless asked for a skeleton.
-4. If information is missing, use placeholders like "[PENDIENTE]".
+Rol: Eres un asistente experto en formulación de proyectos para la Plataforma de Donaciones Culturales (Art. 8° Ley 18.985).
+Objetivo: Dado un brief del usuario, debes producir un borrador completo del formulario del proyecto, más validaciones, checklist de documentos y un cronograma coherente.
+
+Reglas duras (no romper):
+1. El proyecto debe clasificarse en un solo Tipo de Proyecto: Actividades, Equipamiento, Funcionamiento, Infraestructura o Patrimonio Cultural.
+2. El Título debe ser <=150 caracteres y el Resumen <=400 caracteres.
+3. Lugar de ejecución: si es Chile, incluir regiones y comunas; si es extranjero, país y ciudad; si es digital, URL.
+4. La Retribución Cultural debe ser clara, medible e indicar medios probatorios.
+5. Estilo de salida: Responde en español de Chile.
+6. Transparencia: Si faltan datos (RUT, fechas, montos), completa con supuestos explícitos. No inventes datos legales.
+7. Coherencia: Objetivos, cronograma, presupuesto y retribución cultural deben ser consistentes entre sí.
+8. OUTPUT JSON ONLY.
 `;
 
+// Helper to build prompts
 const buildUserPrompt = (payload: AiRequestPayload): string => {
-    const { task, projectContext, userNotes, constraints } = payload;
+    const { task, field, projectContext, userNotes } = payload;
     const ctx = JSON.stringify(projectContext);
-    const notes = userNotes ? `\nUser Notes: ${userNotes}` : "";
-    const maxChars = constraints?.maxChars ? `\nMax Characters: ${constraints.maxChars}` : "";
 
-    switch (task) {
-        case 'generate_title':
-            return `
-      Generate 3 distinct, professional titles for this project.
-      Context: ${ctx} ${notes}
-      Output JSON: { "suggestions": ["Title 1", "Title 2", "Title 3"] }
-      `;
-
-        case 'generate_summary':
-            return `
-      Draft an Executive Summary.
-      Version 1: Full (approx 400 chars).
-      Version 2: Short (approx 250 chars).
-      Context: ${ctx} ${notes}
-      Output JSON: { "suggestions": ["Full Summary...", "Short Summary..."] }
-      `;
-
-        case 'generate_objectives':
-            return `
-      Draft 1 General Objective and 3-5 Specific Objectives.
-      Use action verbs (e.g., Fomentar, Difundir, Capacitar).
-      Context: ${ctx} ${notes}
-      Output JSON: { "suggestions": [{ "general": "...", "specific": ["...", "...", "..."] }] }
-      `;
-
-        case 'generate_retribution':
-            return `
-      Propose a Cultural Retribution plan.
-      Must answer: What, Who, Where, When, How Many.
-      Context: ${ctx} ${notes}
-      Output JSON: { 
-        "suggestions": [{
-             "text": "Full narrative description...",
-             "structured": {
-                 "what": "...",
-                 "who": "...",
-                 "quantity": 100,
-                 "location": "...",
-                 "when": "...",
-                 "accessCondition": "Gratuito" 
-             },
-             "metrics": ["Métrica 1", "Métrica 2"],
-             "evidence": ["Lista de asistencia", "Fotos"]
-        }]
-      }
-      `;
-
-        // Fallback
-        default:
-            return `
-      Task: ${task}.
-      Context: ${ctx} ${notes}
-      Output JSON: { "suggestions": ["Result..."] }
-      `;
+    // 4.2 Prompt de inicio (USER)
+    if (task === 'generate_initial_draft') {
+        return `
+    Genera un borrador completo del proyecto basado en esta idea:
+    Idea del proyecto: "${userNotes}"
+    
+    Devuelve un JSON con la estructura completa del schema Project (clasificacion, pasos 1-5).
+    `;
     }
+
+    // 4.3 Prompt para “refinar un campo”
+    if (task === 'refine_field') {
+        return `
+    Quiero mejorar el campo: ${field}
+    Texto actual (borrador): "${userNotes}"
+    Contexto del proyecto: ${ctx}
+    Ajustes solicitados: "${userNotes}"
+    
+    Reglas: respeta límites de caracteres si aplica, y mantén consistencia.
+    Devuelve JSON: { "suggestions": ["Versión mejorada 1", "Versión mejorada 2"] }
+    `;
+    }
+
+    // 4.4 Prompt para “validador final” (QA)
+    if (task === 'qa_review') {
+        return `
+    Revisa este proyecto JSON y genera:
+    1. Errores duros (impiden enviar).
+    2. Inconsistencias (presupuesto vs cronograma).
+    3. Recomendaciones concretas.
+    
+    Contexto: ${ctx}
+    
+    Devuelve JSON: { 
+        "errores": ["..."], 
+        "advertencias": ["..."], 
+        "sugerencias_mejora": ["..."] 
+    }
+    `;
+    }
+
+    // Fallback for smaller tasks if needed (Legacy)
+    return `
+  Task: ${task}.
+  Context: ${ctx}
+  User Notes: ${userNotes}
+  Output JSON.
+  `;
 };
 
 export default async function handler(req: Request) {
@@ -87,10 +85,9 @@ export default async function handler(req: Request) {
 
         if (!apiKey) {
             return new Response(JSON.stringify({
-                suggestions: ["MOCK RESPONSE: Please configure API Key"],
-                meta: { model: 'mock', timestamp: Date.now() },
-                traceId: 'mock'
-            }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+                suggestions: ["MOCK RESPONSE: Configure API Key"],
+                meta: { model: 'mock' }
+            }), { status: 200 });
         }
 
         const ai = new GoogleGenAI(apiKey);
@@ -103,14 +100,12 @@ export default async function handler(req: Request) {
         const prompt = buildUserPrompt(payload);
         const result = await model.generateContent(prompt);
         const text = result.response.text();
-
-        // Parse response
         const data = JSON.parse(text);
 
         return new Response(JSON.stringify({
             ...data,
             meta: { model: 'gemini-1.5-flash', timestamp: Date.now() },
-            traceId: crypto.randomUUID()
+            suggestions: data.suggestions || [JSON.stringify(data)], // Normalize if full object returned
         }), { status: 200, headers: { 'Content-Type': 'application/json' } });
 
     } catch (err: any) {
