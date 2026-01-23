@@ -12,7 +12,7 @@ const StepClassification: React.FC = () => {
 
     return (
         <div className="space-y-8 animate-slideUp">
-            <div className="card p-8">
+            <div className="card p-4 md:p-8">
                 <h3 className="text-xl font-bold mb-6 text-slate-900">Datos Iniciales</h3>
                 <div className="space-y-4">
                     <div>
@@ -28,7 +28,7 @@ const StepClassification: React.FC = () => {
                 </div>
             </div>
 
-            <div className="card p-8">
+            <div className="card p-4 md:p-8">
                 <h3 className="text-xl font-bold mb-6 text-slate-900">Clasificación (Art. 8°)</h3>
                 <div className="space-y-4">
                     <div>
@@ -55,7 +55,7 @@ const StepNarrative: React.FC<{ onOpenAi: (task: AiTask, field: string) => void 
     return (
         <div className="space-y-8 animate-slideUp">
             {/* TITULO */}
-            <div className="card p-8 relative">
+            <div className="card p-4 md:p-8 relative">
                 <div className="flex justify-between items-start mb-4">
                     <label className="block text-sm font-bold text-slate-700">Título del Proyecto</label>
                     <button
@@ -80,7 +80,7 @@ const StepNarrative: React.FC<{ onOpenAi: (task: AiTask, field: string) => void 
             </div>
 
             {/* RESUMEN */}
-            <div className="card p-8 relative">
+            <div className="card p-4 md:p-8 relative">
                 <div className="flex justify-between items-start mb-4">
                     <label className="block text-sm font-bold text-slate-700">Resumen Ejecutivo</label>
                     <button
@@ -133,7 +133,7 @@ const StepTimeline: React.FC = () => {
 
     return (
         <div className="space-y-8 animate-slideUp">
-            <div className="card p-8">
+            <div className="card p-4 md:p-8">
                 <div className="flex justify-between items-center mb-6">
                     <h3 className="text-xl font-bold text-slate-900">Cronograma de Actividades</h3>
                     <button onClick={addActivity} className="btn-secondary py-2 px-4 text-xs h-10">
@@ -149,7 +149,7 @@ const StepTimeline: React.FC = () => {
                     <div className="space-y-4">
                         {currentProject.timeline.map((act, idx) => (
                             <div key={act.id} className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                                <div className="flex gap-4 mb-2">
+                                <div className="flex flex-col md:flex-row gap-4 mb-2">
                                     <div className="flex-1">
                                         <label className="text-[10px] font-bold text-slate-400 uppercase">Actividad</label>
                                         <input
@@ -160,28 +160,30 @@ const StepTimeline: React.FC = () => {
                                             placeholder="Nombre de la actividad"
                                         />
                                     </div>
-                                    <div className="w-24">
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase">Duración</label>
-                                        <input
-                                            type="number"
-                                            className="input-field py-2 text-sm"
-                                            value={act.duration}
-                                            onChange={e => updateActivity(act.id, 'duration', parseInt(e.target.value))}
-                                        />
+                                    <div className="flex gap-2">
+                                        <div className="w-24">
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase">Duración</label>
+                                            <input
+                                                type="number"
+                                                className="input-field py-2 text-sm"
+                                                value={act.duration}
+                                                onChange={e => updateActivity(act.id, 'duration', parseInt(e.target.value))}
+                                            />
+                                        </div>
+                                        <div className="w-32">
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase">Unidad</label>
+                                            <select
+                                                className="input-field py-2 text-sm"
+                                                value={act.unit}
+                                                onChange={e => updateActivity(act.id, 'unit', e.target.value)}
+                                            >
+                                                <option value="dias">Días</option>
+                                                <option value="semanas">Semanas</option>
+                                                <option value="meses">Meses</option>
+                                            </select>
+                                        </div>
                                     </div>
-                                    <div className="w-32">
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase">Unidad</label>
-                                        <select
-                                            className="input-field py-2 text-sm"
-                                            value={act.unit}
-                                            onChange={e => updateActivity(act.id, 'unit', e.target.value)}
-                                        >
-                                            <option value="dias">Días</option>
-                                            <option value="semanas">Semanas</option>
-                                            <option value="meses">Meses</option>
-                                        </select>
-                                    </div>
-                                    <button onClick={() => removeActivity(act.id)} className="mt-6 text-slate-400 hover:text-red-500">
+                                    <button onClick={() => removeActivity(act.id)} className="mt-2 md:mt-6 text-slate-400 hover:text-red-500 self-end md:self-auto">
                                         <span className="material-icons-outlined">delete</span>
                                     </button>
                                 </div>
@@ -206,6 +208,7 @@ export const Wizard: React.FC = () => {
     const { currentProject, updateProject, apiKey, setApiKey } = useAppStore();
     const navigate = useNavigate();
     const [activeStep, setActiveStep] = useState(0);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     // AI State
     const [aiShow, setAiShow] = useState(false);
@@ -267,14 +270,12 @@ export const Wizard: React.FC = () => {
 
     const handleApplyAi = (val: string) => {
         if (!aiField) return;
-        // Deep update utility would be better, but for MVP strict fields:
         if (aiField === 'content.title') updateProject({ content: { ...currentProject.content, title: val }, name: val });
         else if (aiField === 'content.summary') updateProject({ content: { ...currentProject.content, summary: val } });
-        // Add more field mappings as needed
+        // Add more fields if needed
         setAiShow(false);
     };
 
-    // Render Steps
     const renderContent = () => {
         switch (activeStep) {
             case 0: return <StepClassification />;
@@ -285,52 +286,85 @@ export const Wizard: React.FC = () => {
     };
 
     return (
-        <div className="flex h-screen bg-slate-50 overflow-hidden">
+        <div className="flex h-screen bg-slate-50 overflow-hidden relative">
+            {/* MOBILE OVERLAY */}
+            {mobileMenuOpen && (
+                <div
+                    className="fixed inset-0 bg-slate-900/50 z-30 md:hidden backdrop-blur-sm"
+                    onClick={() => setMobileMenuOpen(false)}
+                />
+            )}
+
             {/* LEFT SIDEBAR (Stepper) */}
-            <aside className="w-80 bg-white border-r border-slate-200 flex flex-col z-20 shadow-xl">
-                <div className="p-8 border-b border-slate-100">
-                    <h1 className="text-xs font-black text-blue-600 uppercase tracking-widest mb-1">Guía de Formulación</h1>
-                    <div className="w-full bg-slate-100 h-1 rounded-full mt-4">
-                        <div className="bg-blue-600 h-1 rounded-full transition-all duration-500" style={{ width: `${((activeStep + 1) / steps.length) * 100}%` }}></div>
+            <aside
+                className={`
+                    fixed md:static inset-y-0 left-0 w-72 bg-white border-r border-slate-200 flex flex-col z-40 shadow-2xl md:shadow-none transition-transform duration-300
+                    ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+                `}
+            >
+                <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+                    <div>
+                        <h1 className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">Guía de Formulación</h1>
+                        <div className="w-full bg-slate-100 h-1 rounded-full mt-2">
+                            <div className="bg-blue-600 h-1 rounded-full transition-all duration-500" style={{ width: `${((activeStep + 1) / steps.length) * 100}%` }}></div>
+                        </div>
                     </div>
+                    <button onClick={() => setMobileMenuOpen(false)} className="md:hidden text-slate-400 hover:text-slate-600">
+                        <span className="material-icons-outlined">close</span>
+                    </button>
                 </div>
-                <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                <div className="flex-1 overflow-y-auto p-3 space-y-1">
                     {steps.map((label, idx) => (
                         <button
                             key={idx}
-                            onClick={() => setActiveStep(idx)}
-                            className={`w-full text-left px-4 py-3 rounded-xl flex items-center gap-3 transition-all ${idx === activeStep ? 'bg-blue-50 text-blue-700 font-bold border border-blue-100' : 'text-slate-500 hover:bg-slate-50'
+                            onClick={() => { setActiveStep(idx); setMobileMenuOpen(false); }}
+                            className={`w-full text-left px-3 py-3 rounded-xl flex items-center gap-3 transition-all ${idx === activeStep ? 'bg-blue-50 text-blue-700 font-bold border border-blue-100' : 'text-slate-500 hover:bg-slate-50'
                                 }`}
                         >
-                            <span className={`w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-bold border ${idx === activeStep ? 'border-blue-500 bg-blue-500 text-white' : 'border-slate-300 bg-white text-slate-400'
+                            <span className={`w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-bold border shrink-0 ${idx === activeStep ? 'border-blue-500 bg-blue-500 text-white' : 'border-slate-300 bg-white text-slate-400'
                                 }`}>
                                 {idx + 1}
                             </span>
-                            <span className="text-sm">{label}</span>
+                            <span className="text-sm truncate">{label}</span>
                         </button>
                     ))}
                 </div>
                 <div className="p-4 border-t border-slate-100">
                     <button onClick={() => navigate('/')} className="text-xs font-bold text-slate-400 hover:text-slate-600 flex items-center gap-2">
-                        <span className="material-icons-outlined">arrow_back</span> Volver al Dashboard
+                        <span className="material-icons-outlined">arrow_back</span> Dashboard
                     </button>
                 </div>
             </aside>
 
             {/* MAIN CONTENT */}
-            <main className="flex-1 flex flex-col h-screen overflow-hidden relative">
-                <header className="px-8 py-4 bg-white border-b border-slate-200 flex justify-between items-center shrink-0">
-                    <div>
-                        <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-500 text-[10px] font-black uppercase tracking-widest">Paso {activeStep + 1}</span>
-                        <h2 className="text-xl font-bold text-slate-900 mt-1">{steps[activeStep]}</h2>
+            <main className="flex-1 flex flex-col h-screen overflow-hidden relative w-full">
+                <header className="px-4 md:px-8 py-4 bg-white border-b border-slate-200 flex justify-between items-center shrink-0">
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => setMobileMenuOpen(true)}
+                            className="md:hidden p-2 -ml-2 text-slate-500 hover:bg-slate-50 rounded-lg"
+                        >
+                            <span className="material-icons-outlined">menu</span>
+                        </button>
+                        <div className="min-w-0">
+                            <span className="hidden md:inline-block px-2 py-0.5 rounded bg-slate-100 text-slate-500 text-[10px] font-black uppercase tracking-widest">Paso {activeStep + 1}</span>
+                            <h2 className="text-lg md:text-xl font-bold text-slate-900 leading-tight truncate max-w-[150px] md:max-w-none">{steps[activeStep]}</h2>
+                            <span className="md:hidden text-[10px] font-bold text-slate-400 uppercase tracking-widest">Paso {activeStep + 1}/{steps.length}</span>
+                        </div>
                     </div>
                     <div className="flex gap-2">
-                        <button disabled={activeStep === 0} onClick={() => setActiveStep(s => s - 1)} className="btn-secondary h-10 px-4 text-sm">Anterior</button>
-                        <button onClick={() => setActiveStep(s => Math.min(steps.length - 1, s + 1))} className="btn-primary h-10 px-6 text-sm">Siguiente</button>
+                        <button disabled={activeStep === 0} onClick={() => setActiveStep(s => s - 1)} className="btn-secondary h-9 md:h-10 px-3 md:px-4 text-xs md:text-sm">
+                            <span className="hidden md:inline">Anterior</span>
+                            <span className="md:hidden material-icons-outlined text-sm">arrow_back</span>
+                        </button>
+                        <button onClick={() => setActiveStep(s => Math.min(steps.length - 1, s + 1))} className="btn-primary h-9 md:h-10 px-4 md:px-6 text-xs md:text-sm">
+                            <span className="hidden md:inline">Siguiente</span>
+                            <span className="md:hidden material-icons-outlined text-sm">arrow_forward</span>
+                        </button>
                     </div>
                 </header>
 
-                <div className="flex-1 overflow-y-auto p-8">
+                <div className="flex-1 overflow-y-auto p-4 md:p-8">
                     <div className="max-w-4xl mx-auto pb-20">
                         {renderContent()}
                     </div>
@@ -340,18 +374,18 @@ export const Wizard: React.FC = () => {
                 {aiShow && (
                     <div className="absolute inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
                         <div className="bg-white rounded-3xl shadow-2xl w-full max-w-xl flex flex-col max-h-[90vh] animate-slideUp">
-                            <div className="bg-blue-600 p-6 rounded-t-3xl flex justify-between items-center">
+                            <div className="bg-blue-600 p-4 md:p-6 rounded-t-3xl flex justify-between items-center">
                                 <div className="text-white">
-                                    <h3 className="font-bold flex items-center gap-2"><span className="material-icons-outlined">auto_awesome</span> Asistente Gemini</h3>
+                                    <h3 className="font-bold flex items-center gap-2 text-base md:text-lg"><span className="material-icons-outlined">auto_awesome</span> Asistente Gemini</h3>
                                     <p className="text-[10px] opacity-80 uppercase tracking-widest">Sugerencia Inteligente</p>
                                 </div>
                                 <button onClick={() => setAiShow(false)} className="text-white/50 hover:text-white"><span className="material-icons-outlined">close</span></button>
                             </div>
 
-                            <div className="p-6 flex-1 overflow-y-auto space-y-4">
+                            <div className="p-4 md:p-6 flex-1 overflow-y-auto space-y-4">
                                 {!aiResult ? (
                                     <>
-                                        <div className="bg-blue-50 p-4 rounded-xl text-sm text-blue-900 italic">
+                                        <div className="bg-blue-50 p-4 rounded-xl text-xs md:text-sm text-blue-900 italic">
                                             Ayudaré a redactar el contenido para este campo basándome en la Ley de Donaciones Culturales.
                                         </div>
                                         <div>
@@ -373,7 +407,7 @@ export const Wizard: React.FC = () => {
                                                 <p className="text-sm text-slate-800 whitespace-pre-wrap">{typeof s === 'string' ? s : JSON.stringify(s)}</p>
                                                 <button
                                                     onClick={() => handleApplyAi(typeof s === 'string' ? s : JSON.stringify(s))}
-                                                    className="mt-3 w-full btn-primary h-8 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    className="mt-3 w-full btn-primary h-8 text-xs md:opacity-0 group-hover:opacity-100 transition-opacity"
                                                 >
                                                     USAR ESTA VERSIÓN
                                                 </button>
