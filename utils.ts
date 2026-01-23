@@ -32,40 +32,38 @@ export const validateProject = (project: Project): ValidationResult => {
   if (!ret.what || !ret.who || !ret.location) {
     addError('retribution', 'La retribución cultural debe estar completa (Qué, Quién, Dónde).');
   }
-  if (ret.quantity <= 0 && project.retributionMeta.metrics.length === 0) {
-    addError('retribution', 'Debe tener al menos 1 métrica (cantidad o métrica explícita).');
-  }
-  if (project.retributionMeta.evidence.length === 0) {
-    addError('retribution', 'Debe seleccionar al menos 1 evidencia.');
+  // Métrica check
+  if (project.retributionMeta.metrics.length === 0 && ret.quantity <= 0) {
+    addError('retribution_meta', 'Debe indicar una cantidad o métrica.');
   }
 
   // Cronograma: al menos 1 actividad
   if (project.timeline.length === 0) {
-    addError('timeline', 'El cronograma debe tener al menos 1 actividad.');
+    addError('timeline', 'Debe tener al menos 1 actividad en el cronograma.');
   }
 
   // Presupuesto: al menos 1 ítem con monto > 0
   if (project.budget.length === 0) {
-    addError('budget', 'El presupuesto debe tener al menos 1 ítem.');
+    addError('budget', 'El presupuesto no puede estar vacío.');
   } else {
-    const hasValidItem = project.budget.some(item => item.amount > 0);
-    if (!hasValidItem) addError('budget', 'Al menos un ítem debe tener un monto mayor a 0.');
+    const validItems = project.budget.filter(i => i.amount > 0);
+    if (validItems.length === 0) addError('budget', 'Debe haber al menos 1 ítem con monto mayor a 0.');
 
-    // Warnings for Red Flags
+    // Check Red Flags
     project.budget.forEach(item => {
-      const desc = item.description.toLowerCase();
+      const text = item.description.toLowerCase();
       BUDGET_RED_FLAGS.forEach(flag => {
-        if (desc.includes(flag)) {
-          addWarning('budget', `Gasto posiblemente objetable: "${item.description}" contiene "${flag}".`);
+        if (text.includes(flag)) {
+          addWarning('budget_flags', `Posible gasto objetable: "${flag}" en "${item.description}"`);
         }
       });
     });
   }
 
-  // Documentos: los obligatorios no pueden estar en “pendiente”
-  const missingDocs = project.documents.filter(doc => doc.required && doc.status === 'Pendiente');
-  if (missingDocs.length > 0) {
-    addError('documents', `Faltan ${missingDocs.length} documentos obligatorios por adjuntar.`);
+  // Documentos
+  const missing = project.documents.filter(d => d.required && d.status === 'Pendiente');
+  if (missing.length > 0) {
+    addError('documents', `Faltan ${missing.length} documentos obligatorios.`);
   }
 
   return result;

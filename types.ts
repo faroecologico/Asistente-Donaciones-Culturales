@@ -119,7 +119,7 @@ export interface Project {
     locationRegion: string;
     locationComuna: string;
     locationSpace: string;
-    culturalRetribution: string; // Textual for portal
+    culturalRetribution: string; // Textual description
     retributionStructured: RetributionDetails;
   };
 
@@ -135,7 +135,6 @@ export interface Project {
   aiHistory: AiLog[];
 }
 
-// API Types
 export type AiTask =
   | "generate_title"
   | "generate_summary"
@@ -158,13 +157,11 @@ export interface AiRequestPayload {
 }
 
 export interface AiResponsePayload {
-  suggestions: any[];
+  suggestions: any[]; // strict usage depends on task
   meta: {
     model: string;
     timestamp: number;
     tokens?: number;
-    safety?: any;
   };
-  warnings?: string[];
   traceId: string;
 }

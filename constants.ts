@@ -4,7 +4,7 @@ export const generateId = () => Math.random().toString(36).substring(2, 11);
 
 export const EMPTY_PROJECT: Project = {
   id: '',
-  name: '',
+  name: 'Nuevo Proyecto',
   status: ProjectStatus.Draft,
   createdAt: 0,
   updatedAt: 0,
@@ -62,11 +62,4 @@ export const RETRIBUTION_EVIDENCE_OPTIONS = [
   "Link de publicación en redes sociales",
   "Aparición en prensa",
   "Certificado de autoridad local"
-];
-export const RETRIBUTION_METRICS_OPTIONS = [
-  "N° de beneficiarios directos",
-  "N° de actividades realizadas",
-  "N° de ejemplares distribuidos",
-  "Porcentaje de becas otorgadas",
-  "N° de horas de mediación"
 ];

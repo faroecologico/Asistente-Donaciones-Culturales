@@ -1,13 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store';
 import { ProjectStatus } from '../types';
-import { SettingsModal } from '../components/SettingsModal';
 
 export const Dashboard: React.FC = () => {
-    const { projects, deleteProject, loadProject, duplicateProject, createProject, apiKey, setApiKey, loadDemo } = useAppStore();
+    const { projects, deleteProject, loadProject, duplicateProject, createProject, apiKey, setApiKey } = useAppStore();
     const navigate = useNavigate();
-    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
     const handleCreate = () => {
         createProject();
@@ -26,22 +24,10 @@ export const Dashboard: React.FC = () => {
                     <h1 className="text-4xl font-black text-slate-900 tracking-tight leading-none mb-4">Proyectos</h1>
                     <p className="text-slate-500 text-lg leading-relaxed">Bienvenido al asistente de formulación. Crea proyectos estructurados para la Ley de Donaciones Culturales.</p>
                 </div>
-                <div className="flex gap-4">
-                    <button
-                        onClick={() => {
-                            loadDemo();
-                            navigate('/wizard');
-                        }}
-                        className="btn-secondary h-14 px-8 rounded-2xl text-base"
-                    >
-                        <span className="material-icons-outlined text-xl">play_circle</span>
-                        Cargar Demo
-                    </button>
-                    <button onClick={handleCreate} className="btn-primary h-14 px-10 rounded-2xl text-base shadow-xl shadow-blue-200">
-                        <span className="material-icons-outlined text-xl">add</span>
-                        Nuevo Proyecto
-                    </button>
-                </div>
+                <button onClick={handleCreate} className="btn-primary h-14 px-10 rounded-2xl text-base shadow-xl shadow-blue-200">
+                    <span className="material-icons-outlined text-xl">add</span>
+                    Nuevo Proyecto
+                </button>
             </div>
 
             {projects.length === 0 ? (
@@ -101,18 +87,19 @@ export const Dashboard: React.FC = () => {
                 </div>
             )}
 
-            {/* API Key Config (Floating button) */}
+            {/* API Key Config (MVP Floating or footer) */}
             <div className="fixed bottom-8 left-8">
                 <button
-                    onClick={() => setIsSettingsOpen(true)}
+                    onClick={() => {
+                        const key = prompt("Ingrese su Gemini API Key (opcional, por defecto usa la del sistema):", apiKey || "");
+                        if (key !== null) setApiKey(key);
+                    }}
                     className="bg-slate-900 text-white p-4 rounded-2xl shadow-2xl flex items-center gap-3 hover:scale-105 transition-transform"
                 >
                     <span className="material-icons-outlined text-lg">vpn_key</span>
                     <span className="text-xs font-bold uppercase tracking-widest leading-none">Config de IA</span>
                 </button>
             </div>
-
-            <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
         </div>
     );
 };

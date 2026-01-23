@@ -1,8 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Project, Entity, AiLog, ProjectStatus, ValidationResult } from './types';
+import { Project, Entity, AiLog, ProjectStatus, ValidationResult, DocumentItem } from './types';
 import { EMPTY_PROJECT, generateId } from './constants';
 import { validateProject } from './utils';
+import { getRequiredDocuments } from './lib/documentRules';
 
 interface AppState {
   projects: Project[];
@@ -10,19 +11,15 @@ interface AppState {
   currentProject: Project | null;
   validation: ValidationResult | null;
   apiKey: string | null;
-  user: any | null;
 
-  // Actions
-  setUser: (user: any | null) => void;
   createProject: (base?: Partial<Project>) => void;
   loadProject: (id: string) => void;
   updateProject: (data: Partial<Project>) => void;
   deleteProject: (id: string) => void;
   duplicateProject: (id: string) => void;
   runValidation: () => void;
-  addAiLog: (log: AiLog) => void;
+  recalcDocuments: () => void;
   setApiKey: (key: string | null) => void;
-  loadDemo: () => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -33,26 +30,35 @@ export const useAppStore = create<AppState>()(
       currentProject: null,
       validation: null,
       apiKey: null,
-      user: null,
-
-      setUser: (user) => set({ user }),
 
       createProject: (base) => {
-        const newProject = {
+        const id = generateId();
+        const newProject: Project = {
           ...EMPTY_PROJECT,
           ...base,
-          id: generateId(),
+          id,
           createdAt: Date.now(),
           updatedAt: Date.now()
         };
+        // Initial docs calculation
+        const rules = getRequiredDocuments(newProject.initial.beneficiaryType, "", "");
+        newProject.documents = rules.map(r => ({
+          id: generateId(),
+          name: r.name,
+          required: r.required,
+          status: "Pendiente",
+          maxAgeDays: r.maxAgeDays
+        }));
+
         set(state => ({
           projects: [newProject, ...state.projects],
-          currentProject: newProject
+          currentProject: newProject,
+          validation: validateProject(newProject)
         }));
       },
 
       loadProject: (id) => {
-        const p = get().projects.find(p => p.id === id);
+        const p = get().projects.find(x => x.id === id);
         if (p) set({ currentProject: p, validation: validateProject(p) });
       },
 
@@ -61,13 +67,35 @@ export const useAppStore = create<AppState>()(
         if (!currentProject) return;
 
         const updated = { ...currentProject, ...data, updatedAt: Date.now() };
-        const updatedList = projects.map(p => p.id === updated.id ? updated : p);
+
+        // If initial classification changed, we should ideally re-calc documents, 
+        // but we'll leave that to explicit 'recalcDocuments' call or check if those fields changed.
+
+        const newProjects = projects.map(p => p.id === updated.id ? updated : p);
 
         set({
           currentProject: updated,
-          projects: updatedList,
+          projects: newProjects,
           validation: validateProject(updated)
         });
+      },
+
+      recalcDocuments: () => {
+        const { currentProject, updateProject } = get();
+        if (!currentProject) return;
+        const { beneficiaryType, beneficiaryCategory, beneficiaryClass } = currentProject.initial;
+        const rules = getRequiredDocuments(beneficiaryType, beneficiaryCategory, beneficiaryClass);
+
+        // Merge existing docs? For MVP, we'll just regenerate to align with rules
+        const newDocs: DocumentItem[] = rules.map(r => ({
+          id: generateId(),
+          name: r.name,
+          required: r.required,
+          status: "Pendiente",
+          maxAgeDays: r.maxAgeDays
+        }));
+
+        updateProject({ documents: newDocs });
       },
 
       deleteProject: (id) => {
@@ -78,9 +106,9 @@ export const useAppStore = create<AppState>()(
       },
 
       duplicateProject: (id) => {
-        const p = get().projects.find(p => p.id === id);
+        const p = get().projects.find(x => x.id === id);
         if (p) {
-          const copy: Project = {
+          const copy = {
             ...JSON.parse(JSON.stringify(p)),
             id: generateId(),
             name: `${p.name} (Copia)`,
@@ -94,37 +122,14 @@ export const useAppStore = create<AppState>()(
 
       runValidation: () => {
         const { currentProject } = get();
-        if (currentProject) {
-          set({ validation: validateProject(currentProject) });
-        }
+        if (currentProject) set({ validation: validateProject(currentProject) });
       },
 
-      addAiLog: (log) => {
-        const { currentProject } = get();
-        if (!currentProject) return;
-        const newHistory = [log, ...currentProject.aiHistory];
-        get().updateProject({ aiHistory: newHistory });
-      },
-
-      setApiKey: (key) => set({ apiKey: key }),
-
-      loadDemo: () => {
-        const { DEMO_PROJECT } = require('./lib/seedData');
-        const demo = { ...DEMO_PROJECT, id: generateId(), createdAt: Date.now(), updatedAt: Date.now() };
-        set(state => ({
-          projects: [demo, ...state.projects],
-          currentProject: demo,
-          validation: validateProject(demo)
-        }));
-      }
+      setApiKey: (key) => set({ apiKey: key })
     }),
     {
-      name: 'asistente-donaciones-storage',
-      partialize: (state) => ({
-        projects: state.projects,
-        entities: state.entities,
-        apiKey: state.apiKey
-      }),
+      name: 'donaciones-mvp-storage',
+      partialize: (state) => ({ projects: state.projects, entities: state.entities, apiKey: state.apiKey })
     }
   )
 );
