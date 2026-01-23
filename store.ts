@@ -1,4 +1,6 @@
-import { Project, ValidationResult } from './types';
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import { Project, Validaciones } from './types';
 import { EMPTY_PROJECT, generateId } from './constants';
 import { getRequiredDocuments } from './lib/documentRules';
 import { runQualityGates } from './lib/validators';
