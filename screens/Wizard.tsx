@@ -510,14 +510,47 @@ export const Wizard: React.FC = () => {
                             <div className="space-y-6">
                                 <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100 pb-3">Generar Entregables</h4>
                                 <div className="space-y-4">
-                                    <button className="btn-primary w-full h-16 text-sm">
+                                    <button
+                                        onClick={() => {
+                                            const content = `
+PROYECTO: ${currentProject.name}
+FECHA: ${new Date().toLocaleDateString()}
+----------------------------------------
+TÍTULO: ${currentProject.content.title}
+RESUMEN: ${currentProject.content.summary}
+----------------------------------------
+OBJETIVOS:
+General: ${currentProject.content.objectivesGeneral || 'N/A'}
+Específicos:
+${currentProject.content.objectivesSpecific.map(o => `- ${o}`).join('\n')}
+----------------------------------------
+RETRIBUCIÓN CULTURAL:
+Qué: ${currentProject.content.retributionStructured.what}
+Quién: ${currentProject.content.retributionStructured.who}
+Dónde: ${currentProject.content.retributionStructured.location}
+Métricas: ${currentProject.retributionMeta.metrics.join(', ')}
+----------------------------------------
+PRESUPUESTO TOTAL: $${currentProject.budget.reduce((acc, x) => acc + x.amount, 0).toLocaleString('es-CL')}
+`;
+                                            const blob = new Blob([content], { type: 'text/plain' });
+                                            const url = URL.createObjectURL(blob);
+                                            const a = document.createElement('a');
+                                            a.href = url;
+                                            a.download = `PROYECTO_${currentProject.name.replace(/ /g, '_')}.txt`;
+                                            a.click();
+                                        }}
+                                        className="btn-primary w-full h-16 text-sm"
+                                    >
                                         <span className="material-icons-outlined text-xl">file_download</span>
                                         DESCARGAR PAQUETE ZIP (.zip)
                                     </button>
                                     <div className="grid grid-cols-2 gap-4">
-                                        <button className="btn-secondary h-14 text-xs font-black">
+                                        <button
+                                            onClick={() => navigator.clipboard.writeText(JSON.stringify(currentProject, null, 2))}
+                                            className="btn-secondary h-14 text-xs font-black"
+                                        >
                                             <span className="material-icons-outlined text-lg">content_copy</span>
-                                            COPIAR TEXTOS
+                                            COPIAR JSON
                                         </button>
                                         <button className="btn-secondary h-14 text-xs font-black">
                                             <span className="material-icons-outlined text-lg">list_alt</span>
