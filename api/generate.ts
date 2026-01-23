@@ -95,21 +95,24 @@ const buildUserPrompt = (payload: AiRequestPayload): string => {
   `;
 };
 
-export default async function handler(req: Request) {
-    if (req.method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
+export default async function handler(req: any, res: any) {
+    if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Method Not Allowed' });
+    }
 
     try {
-        const payload: AiRequestPayload = await req.json();
-        const apiKey = req.headers.get('x-gemini-api-key') || process.env.GEMINI_API_KEY;
+        const payload: AiRequestPayload = req.body;
+        // Check both headers (lowercase in node)
+        const apiKey = req.headers['x-gemini-api-key'] || process.env.GEMINI_API_KEY;
 
         if (!apiKey) {
-            return new Response(JSON.stringify({
+            return res.status(200).json({
                 suggestions: ["MOCK RESPONSE: Configure API Key"],
                 meta: { model: 'mock' }
-            }), { status: 200 });
+            });
         }
 
-        const ai = new GoogleGenAI(apiKey);
+        const ai = new GoogleGenAI(apiKey as string);
         const model = ai.getGenerativeModel({
             model: 'gemini-1.5-flash',
             systemInstruction: SYSTEM_PROMPT,
@@ -142,13 +145,14 @@ export default async function handler(req: Request) {
             }
         }
 
-        return new Response(JSON.stringify({
+        return res.status(200).json({
             ...data,
             meta: { model: 'gemini-1.5-flash', timestamp: Date.now() },
             suggestions: data.suggestions || [JSON.stringify(data)],
-        }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+        });
 
     } catch (err: any) {
-        return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+        console.error("API Error:", err);
+        return res.status(500).json({ error: err.message, stack: err.stack });
     }
 }
